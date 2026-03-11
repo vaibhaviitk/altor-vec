@@ -1,0 +1,4 @@
+/target
+test_index.bin
+wasm/pkg/
+data/

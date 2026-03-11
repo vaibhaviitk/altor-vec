@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>altor-vec benchmark</title>
+  <style>
+    body { font-family: monospace; max-width: 700px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+    h1 { font-size: 1.4em; }
+    #status { color: #666; }
+    table { border-collapse: collapse; margin: 16px 0; }
+    td, th { text-align: left; padding: 4px 16px 4px 0; }
+    .pass { color: green; }
+    .fail { color: red; }
+  </style>
+</head>
+<body>
+  <h1>altor-vec benchmark</h1>
+  <p id="status">Loading...</p>
+  <div id="results"></div>
+  <script type="module">
+    import init, { WasmSearchEngine } from '../pkg/altor_vec_wasm.js';
+
+    const $ = (id) => document.getElementById(id);
+    const status = (msg) => $('status').textContent = msg;
+
+    function randomQuery(dims) {
+      const q = new Float32Array(dims);
+      for (let i = 0; i < dims; i++) q[i] = Math.random() * 2 - 1;
+      let norm = 0;
+      for (let i = 0; i < dims; i++) norm += q[i] * q[i];
+      norm = Math.sqrt(norm);
+      for (let i = 0; i < dims; i++) q[i] /= norm;
+      return q;
+    }
+
+    function percentile(sorted, p) {
+      return sorted[Math.floor(sorted.length * p)];
+    }
+
+    async function run() {
+      status('Initializing WASM...');
+      await init();
+
+      status('Fetching test_index.bin...');
+      const resp = await fetch('../../test_index.bin');
+      const buf = new Uint8Array(await resp.arrayBuffer());
+
+      status('Loading index...');
+      const t0 = performance.now();
+      const engine = new WasmSearchEngine(buf);
+      const loadTime = performance.now() - t0;
+
+      const wasmResp = await fetch('../pkg/altor_vec_wasm_bg.wasm');
+      const wasmSize = parseInt(wasmResp.headers.get('content-length') || '0');
+
+      status('Running 200 queries...');
+      // Let the UI update
+      await new Promise(r => setTimeout(r, 10));
+
+      const dims = 384;
+      const numQueries = 200;
+      const topK = 10;
+      const latencies = [];
+
+      for (let i = 0; i < numQueries; i++) {
+        const query = randomQuery(dims);
+        const start = performance.now();
+        engine.search(query, topK);
+        const elapsed = performance.now() - start;
+        latencies.push(elapsed);
+      }
+
+      latencies.sort((a, b) => a - b);
+      const avg = latencies.reduce((a, b) => a + b) / latencies.length;
+      const p50 = percentile(latencies, 0.50);
+      const p95 = percentile(latencies, 0.95);
+      const p99 = percentile(latencies, 0.99);
+
+      const p95Pass = p95 < 10;
+
+      status('Done!');
+
+      const memMB = performance.memory
+        ? (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1)
+        : 'N/A';
+
+      $('results').innerHTML = `
+        <table>
+          <tr><th>Metric</th><th>Value</th><th>Gate</th></tr>
+          <tr>
+            <td>p50 latency</td>
+            <td>${p50.toFixed(2)} ms</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>p95 latency</td>
+            <td>${p95.toFixed(2)} ms</td>
+            <td class="${p95Pass ? 'pass' : 'fail'}">${p95Pass ? 'PASS' : 'FAIL'} (&lt;10ms)</td>
+          </tr>
+          <tr>
+            <td>p99 latency</td>
+            <td>${p99.toFixed(2)} ms</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>avg latency</td>
+            <td>${avg.toFixed(2)} ms</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>.wasm size</td>
+            <td>${(wasmSize / 1024).toFixed(1)} KB</td>
+            <td class="${wasmSize < 2*1024*1024 ? 'pass' : 'fail'}">${wasmSize < 2*1024*1024 ? 'PASS' : 'FAIL'} (&lt;2MB)</td>
+          </tr>
+          <tr>
+            <td>Index load</td>
+            <td>${loadTime.toFixed(1)} ms</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Vectors</td>
+            <td>${engine.len()}</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>JS heap</td>
+            <td>${memMB} MB</td>
+            <td></td>
+          </tr>
+        </table>
+        <p>Queries: ${numQueries} × top-${topK} on 10K/384d index</p>
+      `;
+
+      engine.free();
+    }
+
+    run().catch(e => { status('Error: ' + e.message); console.error(e); });
+  </script>
+</body>
+</html>

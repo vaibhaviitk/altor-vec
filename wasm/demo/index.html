@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>altor-vec — semantic search demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 760px; margin: 0 auto; padding: 32px 20px;
+      color: #1a1a1a; background: #fafafa;
+    }
+    h1 { font-size: 1.5em; margin-bottom: 4px; }
+    .subtitle { color: #666; font-size: 0.9em; margin-bottom: 24px; }
+    #search-box {
+      width: 100%; padding: 12px 16px; font-size: 1em;
+      border: 2px solid #ddd; border-radius: 8px;
+      outline: none; transition: border-color 0.2s;
+    }
+    #search-box:focus { border-color: #4a90d9; }
+    #search-box:disabled { background: #f0f0f0; }
+    #status {
+      margin: 12px 0; font-size: 0.85em; color: #888;
+      min-height: 1.2em;
+    }
+    .status-loading { color: #c08000; }
+    .status-ready { color: #2a8a2a; }
+    .status-error { color: #c00; }
+    #timing {
+      font-size: 0.8em; color: #999; margin-bottom: 16px;
+      min-height: 1.2em;
+    }
+    .result {
+      background: #fff; border: 1px solid #e8e8e8;
+      border-radius: 8px; padding: 16px; margin-bottom: 12px;
+    }
+    .result-header {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 6px;
+    }
+    .result-rank { font-weight: 600; color: #4a90d9; font-size: 0.85em; }
+    .result-score { font-size: 0.8em; color: #999; font-family: monospace; }
+    .result-text { font-size: 0.92em; line-height: 1.5; color: #333; }
+    .no-results { color: #999; font-style: italic; margin-top: 16px; }
+    .progress-bar {
+      width: 100%; height: 4px; background: #eee;
+      border-radius: 2px; margin-top: 8px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: #4a90d9;
+      border-radius: 2px; transition: width 0.3s;
+    }
+    .badge {
+      display: inline-block; font-size: 0.7em; color: #999;
+      border: 1px solid #ddd; border-radius: 4px; padding: 2px 6px;
+      margin-left: 8px; vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <h1>altor-vec <span class="badge">Web Worker</span></h1>
+  <p class="subtitle">Semantic search over 10K MS MARCO passages — fully client-side with WASM + Transformers.js (off main thread)</p>
+
+  <input type="text" id="search-box" placeholder="Search for anything..." disabled />
+  <div id="status" class="status-loading">Initializing...</div>
+  <div id="progress-container"></div>
+  <div id="timing"></div>
+  <div id="results"></div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let debounceTimer = null;
+    let requestCounter = 0;
+    let latestRequestId = 0;
+
+    function setStatus(msg, type = 'loading') {
+      $('status').textContent = msg;
+      $('status').className = `status-${type}`;
+    }
+
+    function showProgress(pct) {
+      const container = $('progress-container');
+      if (pct === null) {
+        container.innerHTML = '';
+        return;
+      }
+      container.innerHTML = `<div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>`;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderResults(results) {
+      const el = $('results');
+      if (!results || results.length === 0) {
+        el.innerHTML = '<p class="no-results">No results found.</p>';
+        return;
+      }
+      el.innerHTML = results.map((r, i) => `
+        <div class="result">
+          <div class="result-header">
+            <span class="result-rank">#${i + 1}</span>
+            <span class="result-score">score: ${r.score.toFixed(4)}</span>
+          </div>
+          <div class="result-text">${escapeHtml(r.text)}</div>
+        </div>
+      `).join('');
+    }
+
+    // Spawn worker
+    const worker = new Worker('worker.js', { type: 'module' });
+
+    worker.onmessage = (e) => {
+      const msg = e.data;
+      if (msg.type === 'status') {
+        setStatus(msg.msg);
+        if (msg.pct != null) showProgress(msg.pct);
+      } else if (msg.type === 'ready') {
+        showProgress(null);
+        setStatus('Ready — type a query to search', 'ready');
+        $('search-box').disabled = false;
+        $('search-box').focus();
+      } else if (msg.type === 'results') {
+        // Ignore stale results
+        if (msg.requestId < latestRequestId) return;
+        if (msg.timing) {
+          $('timing').textContent =
+            `embed: ${msg.timing.embedMs}ms | search: ${msg.timing.searchMs}ms | total: ${msg.timing.totalMs}ms`;
+        } else {
+          $('timing').textContent = '';
+        }
+        renderResults(msg.results);
+      } else if (msg.type === 'error') {
+        setStatus('Error: ' + msg.msg, 'error');
+        showProgress(null);
+      }
+    };
+
+    worker.onerror = (e) => {
+      setStatus('Worker error: ' + e.message, 'error');
+      showProgress(null);
+    };
+
+    function search(query) {
+      const id = ++requestCounter;
+      latestRequestId = id;
+      if (!query.trim()) {
+        $('results').innerHTML = '';
+        $('timing').textContent = '';
+        return;
+      }
+      worker.postMessage({ type: 'search', query, requestId: id });
+    }
+
+    $('search-box').addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => search(e.target.value), 300);
+    });
+
+    $('search-box').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        clearTimeout(debounceTimer);
+        search(e.target.value);
+      }
+    });
+
+    // Boot
+    worker.postMessage({ type: 'init' });
+  </script>
+</body>
+</html>

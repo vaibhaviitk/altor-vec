@@ -1,0 +1,22 @@
+[
+  {"query": "what is the speed of light", "expected_keywords": ["light", "speed", "meters", "second"], "notes": "factoid physics"},
+  {"query": "how to lose weight fast", "expected_keywords": ["weight", "diet", "exercise", "calories"], "notes": "how-to health"},
+  {"query": "what causes earthquakes", "expected_keywords": ["earthquake", "tectonic", "plates", "fault"], "notes": "factoid geology"},
+  {"query": "how to make pasta from scratch", "expected_keywords": ["pasta", "flour", "dough", "eggs"], "notes": "how-to cooking"},
+  {"query": "what is photosynthesis", "expected_keywords": ["photosynthesis", "plants", "sunlight", "chlorophyll"], "notes": "definitional biology"},
+  {"query": "difference between alligator and crocodile", "expected_keywords": ["alligator", "crocodile", "snout", "teeth"], "notes": "comparative zoology"},
+  {"query": "who invented the telephone", "expected_keywords": ["telephone", "Bell", "invented", "patent"], "notes": "factoid history"},
+  {"query": "how does a vaccine work", "expected_keywords": ["vaccine", "immune", "antibodies", "virus"], "notes": "how-to medical"},
+  {"query": "what is the largest ocean", "expected_keywords": ["Pacific", "ocean", "largest", "area"], "notes": "factoid geography"},
+  {"query": "how to train a puppy", "expected_keywords": ["puppy", "training", "commands", "reward"], "notes": "how-to pets"},
+  {"query": "what is global warming", "expected_keywords": ["warming", "climate", "greenhouse", "temperature"], "notes": "definitional environment"},
+  {"query": "python vs java programming", "expected_keywords": ["Python", "Java", "programming", "language"], "notes": "comparative tech"},
+  {"query": "symptoms of diabetes", "expected_keywords": ["diabetes", "blood", "sugar", "insulin"], "notes": "factoid medical"},
+  {"query": "how to change a car tire", "expected_keywords": ["tire", "jack", "lug", "spare"], "notes": "how-to automotive"},
+  {"query": "what is quantum computing", "expected_keywords": ["quantum", "qubit", "computing", "superposition"], "notes": "definitional tech"},
+  {"query": "benefits of meditation", "expected_keywords": ["meditation", "stress", "mindfulness", "mental"], "notes": "how-to wellness"},
+  {"query": "how far is the moon from earth", "expected_keywords": ["moon", "distance", "miles", "kilometers"], "notes": "factoid astronomy"},
+  {"query": "why do leaves change color in fall", "expected_keywords": ["leaves", "chlorophyll", "color", "autumn"], "notes": "factoid botany"},
+  {"query": "how to start a small business", "expected_keywords": ["business", "plan", "start", "license"], "notes": "how-to entrepreneurship"},
+  {"query": "electric cars vs gas cars", "expected_keywords": ["electric", "gas", "emissions", "battery"], "notes": "comparative automotive"}
+]

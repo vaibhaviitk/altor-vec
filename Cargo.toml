@@ -1,0 +1,38 @@
+[workspace]
+members = [".", "wasm"]
+
+[package]
+name = "altor-vec"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+serialization = ["serde", "bincode"]
+
+[dependencies]
+rand = "0.8"
+serde = { version = "1", features = ["derive"], optional = true }
+bincode = { version = "1", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+rand = { version = "0.8", features = ["small_rng"] }
+serde_json = "1"
+
+[[example]]
+name = "generate_fixture"
+required-features = ["serialization"]
+
+[[example]]
+name = "build_index"
+required-features = ["serialization"]
+
+[[bench]]
+name = "search_bench"
+harness = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
