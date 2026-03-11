@@ -1,10 +1,13 @@
-/// Layered graph structure for HNSW.
-///
-/// Each node stores its vector and a list of neighbor lists (one per layer it exists in).
-/// Neighbors are stored as (node_id, distance) pairs sorted by distance.
+//! Layered graph structure for HNSW.
+//!
+//! Each node stores its vector and a list of neighbor lists (one per layer it exists in).
+//! Neighbors are stored as (node_id, distance) pairs sorted by distance.
 
 /// A single node in the HNSW graph.
-#[cfg_attr(feature = "serialization", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serialization",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Node {
     /// The vector data (L2-normalized at insert time).
     pub vector: Vec<f32>,
@@ -16,7 +19,10 @@ pub struct Node {
 }
 
 /// The HNSW layered graph.
-#[cfg_attr(feature = "serialization", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serialization",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct Graph {
     /// All nodes in insertion order. Node ID = index.
     pub nodes: Vec<Node>,

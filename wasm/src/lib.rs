@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
 use altor_vec::HnswIndex;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct WasmSearchEngine {

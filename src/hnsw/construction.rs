@@ -19,7 +19,12 @@ pub fn random_layer(m: usize, rng: &mut impl Rng) -> usize {
 
 /// Insert a new vector into the HNSW graph.
 /// The vector should already be L2-normalized.
-pub fn insert(graph: &mut Graph, vector: Vec<f32>, ef_construction: usize, rng: &mut impl Rng) -> usize {
+pub fn insert(
+    graph: &mut Graph,
+    vector: Vec<f32>,
+    ef_construction: usize,
+    rng: &mut impl Rng,
+) -> usize {
     let new_layer = random_layer(graph.m, rng);
     let new_id = graph.add_node(vector, new_layer);
 
@@ -49,11 +54,7 @@ pub fn insert(graph: &mut Graph, vector: Vec<f32>, ef_construction: usize, rng: 
         let results = search_layer(graph, &query, &current_entry_points, ef_construction, layer);
 
         // Select M neighbors (use M, not Mmax — paper Algorithm 2)
-        let neighbors: Vec<usize> = results
-            .iter()
-            .take(graph.m)
-            .map(|&(id, _)| id)
-            .collect();
+        let neighbors: Vec<usize> = results.iter().take(graph.m).map(|&(id, _)| id).collect();
 
         // Connect new node to neighbors
         graph.set_neighbors(new_id, layer, neighbors.clone());
@@ -107,7 +108,7 @@ mod tests {
     fn test_random_layer_distribution() {
         let mut rng = rand::thread_rng();
         let m = 16;
-        let mut layers = vec![0usize; 10];
+        let mut layers = [0usize; 10];
         for _ in 0..10000 {
             let l = random_layer(m, &mut rng);
             if l < layers.len() {

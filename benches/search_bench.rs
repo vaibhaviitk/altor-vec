@@ -1,6 +1,6 @@
-use criterion::{criterion_group, criterion_main, Criterion};
 use altor_vec::distance::normalize;
 use altor_vec::HnswIndex;
+use criterion::{criterion_group, criterion_main, Criterion};
 use rand::Rng;
 
 fn random_unit_vector(dims: usize, rng: &mut impl Rng) -> Vec<f32> {
@@ -49,5 +49,10 @@ fn bench_search_1k(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_search_ef50, bench_search_ef500, bench_search_1k);
+criterion_group!(
+    benches,
+    bench_search_ef50,
+    bench_search_ef500,
+    bench_search_1k
+);
 criterion_main!(benches);

@@ -6,9 +6,13 @@
   <p align="center">
     <a href="https://www.npmjs.com/package/altor-vec"><img src="https://img.shields.io/npm/v/altor-vec?color=blue&label=npm" alt="npm version"></a>
     <a href="https://www.npmjs.com/package/altor-vec"><img src="https://img.shields.io/npm/dm/altor-vec?color=green" alt="npm downloads"></a>
+    <a href="https://github.com/altor-lab/altor-vec/actions/workflows/ci.yml"><img src="https://github.com/altor-lab/altor-vec/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <a href="https://github.com/altor-lab/altor-vec/stargazers"><img src="https://img.shields.io/github/stars/altor-lab/altor-vec?style=social" alt="GitHub stars"></a>
     <a href="https://github.com/altor-lab/altor-vec/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License"></a>
     <img src="https://img.shields.io/badge/WASM-54KB_gzipped-orange" alt="WASM size">
+  </p>
+  <p align="center">
+    <a href="https://altorlab.dev"><img src="https://img.shields.io/badge/%F0%9F%9A%80_Try_Live_Demo-altorlab.dev-blueviolet?style=for-the-badge" alt="Try Live Demo"></a>
   </p>
 </p>
 
@@ -149,6 +153,12 @@ const output = await embed('your query', { pooling: 'mean', normalize: true });
 const results = JSON.parse(engine.search(new Float32Array(output.data), 5));
 ```
 
+## How it works
+
+altor-vec uses **HNSW (Hierarchical Navigable Small World)** — the same algorithm behind Pinecone, Qdrant, and pgvector. HNSW builds a multi-layer graph where each node is a vector and edges connect nearby neighbors. Upper layers act as express lanes for coarse navigation; the bottom layer contains all vectors for fine-grained search. A query enters at the top and greedily descends to find the nearest neighbors in O(log n) time.
+
+All vectors are L2-normalized at insert time, so dot product distance equals cosine similarity — no extra computation at search time.
+
 ## Architecture
 
 ```
@@ -175,7 +185,7 @@ cd wasm && wasm-pack build --target web --release  # build WASM
 
 ## Contributing
 
-We welcome contributions! Open an issue to discuss what you'd like to change, then submit a PR.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions, code style, and PR process.
 
 ## License
 

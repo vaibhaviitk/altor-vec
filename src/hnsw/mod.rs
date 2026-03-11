@@ -1,16 +1,19 @@
+pub mod construction;
 pub mod graph;
 pub mod search;
-pub mod construction;
 
 use rand::Rng;
 
-use crate::distance::normalize;
-use self::graph::Graph;
 use self::construction::insert;
+use self::graph::Graph;
 use self::search::knn_search;
+use crate::distance::normalize;
 
 /// HNSW index with configurable parameters.
-#[cfg_attr(feature = "serialization", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serialization",
+    derive(serde::Serialize, serde::Deserialize)
+)]
 pub struct HnswIndex {
     pub graph: Graph,
     pub ef_construction: usize,

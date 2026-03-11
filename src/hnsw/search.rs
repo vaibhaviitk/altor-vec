@@ -1,8 +1,8 @@
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 
-use crate::distance::dot_product;
 use super::graph::Graph;
+use crate::distance::dot_product;
 
 #[derive(Clone, Copy)]
 struct Candidate {
@@ -100,8 +100,14 @@ pub fn search_layer_counted(
         let d = dist(query, &graph.nodes[ep].vector);
         dist_computations += 1;
         visited[ep] = true;
-        candidates.push(NearCandidate { id: ep, distance: d });
-        result_heap.push(Candidate { id: ep, distance: d });
+        candidates.push(NearCandidate {
+            id: ep,
+            distance: d,
+        });
+        result_heap.push(Candidate {
+            id: ep,
+            distance: d,
+        });
     }
 
     while let Some(nearest) = candidates.pop() {
@@ -182,5 +188,61 @@ mod tests {
         let a = vec![1.0, 0.0, 0.0];
         let b = vec![0.0, 1.0, 0.0];
         assert!((dist(&a, &b) - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_knn_search_empty_graph() {
+        let graph = Graph::new(16);
+        let query = vec![1.0, 0.0, 0.0];
+        let results = knn_search(&graph, &query, 5, 50);
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_knn_search_single_node() {
+        let mut graph = Graph::new(16);
+        let mut v = vec![1.0, 0.0, 0.0];
+        crate::distance::normalize(&mut v);
+        graph.add_node(v, 0);
+        graph.entry_point = Some(0);
+
+        let mut query = vec![1.0, 0.0, 0.0];
+        crate::distance::normalize(&mut query);
+        let results = knn_search(&graph, &query, 5, 50);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].0, 0);
+        assert!(results[0].1 < 1e-5);
+    }
+
+    #[test]
+    fn test_search_layer_returns_sorted() {
+        let mut graph = Graph::new(16);
+
+        // Add 3 nodes with different vectors
+        let vectors: Vec<Vec<f32>> = vec![
+            vec![1.0, 0.0, 0.0],
+            vec![0.7, 0.7, 0.0],
+            vec![0.0, 1.0, 0.0],
+        ];
+        for v in &vectors {
+            let mut nv = v.clone();
+            crate::distance::normalize(&mut nv);
+            graph.add_node(nv, 0);
+        }
+        graph.entry_point = Some(0);
+
+        // Connect all nodes to each other at layer 0
+        graph.set_neighbors(0, 0, vec![1, 2]);
+        graph.set_neighbors(1, 0, vec![0, 2]);
+        graph.set_neighbors(2, 0, vec![0, 1]);
+
+        let mut query = vec![1.0, 0.0, 0.0];
+        crate::distance::normalize(&mut query);
+        let results = search_layer(&graph, &query, &[0], 10, 0);
+
+        // Verify sorted by distance
+        for i in 1..results.len() {
+            assert!(results[i].1 >= results[i - 1].1);
+        }
     }
 }
